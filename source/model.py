@@ -6,6 +6,12 @@ from scipy.special import binom
 from torch import nn
 
 
+if torch.cuda.is_available():  
+    device = "cuda:0" 
+else:  
+    device = "cpu"
+    
+
 
 class F_NN(nn.Module):
     def __init__(self,in_dim,out_dim,shapes,NL=nn.ELU):
