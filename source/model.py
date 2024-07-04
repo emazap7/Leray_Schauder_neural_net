@@ -151,15 +151,21 @@ class Leray_Schauder_model(nn.Module):
         
         return out_func
     
+    
+    
+class interpolated_func:
+    def __init__(self,time,obs):
+        def interpolator(self,time,obs):
+            x = time
+            y = obs
+            coeffs = natural_cubic_spline_coeffs(x, y)
+            interpolation = NaturalCubicSpline(coeffs)
 
+            def output(point:torch.Tensor):
+                return interpolation.evaluate(point)
+
+            return output
+        self.interpolator = interpolator(time,obs)
         
-def interpolator(time,obs):
-        x = time
-        y = obs
-        coeffs = natural_cubic_spline_coeffs(x, y)
-        interpolation = NaturalCubicSpline(coeffs)
-
-        def output(point:torch.Tensor):
-            return interpolation.evaluate(point)
-
-        return output
+    def func(self,x):
+        return self.interpolator(x)
