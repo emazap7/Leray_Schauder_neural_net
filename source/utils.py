@@ -17,7 +17,6 @@ from torchcubicspline import(natural_cubic_spline_coeffs,
 
 from torch.utils.data import SubsetRandomSampler
 
-from spectral_source.spectral_integrator import Chebyshev_nchannel, spectral_integrator_nchannels, spectral_integrator, Chebyshev
 
 #Torch libraries
 import torch
@@ -179,7 +178,7 @@ class Train_val_split:
         return val
     
     
-class spectral_dataset(Dataset):
+class dataset(Dataset):
     'Characterizes a dataset for PyTorch'
     def __init__(self, Data, spectral_coeff):
         'Initialization'
@@ -238,7 +237,7 @@ def plot_dim_vs_time(obs_to_print, time_to_print, z_to_print, dummy_times_to_pri
     
     
      
-class spectral_dataset_generator(Dataset):
+class dataset_generator(Dataset):
     def __init__(self, Data, times, segment_len, segment_window_factor, frames_to_drop):
         self.times = times.float()
         self.Data = Data.float()
