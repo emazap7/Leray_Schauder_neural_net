@@ -152,8 +152,7 @@ class Leray_Schauder_model(nn.Module):
         return out_func
     
 
-    
-    
+        
 def interpolator(time,obs):
         x = time
         y = obs
