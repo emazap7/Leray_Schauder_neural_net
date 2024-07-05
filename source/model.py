@@ -87,7 +87,6 @@ class Leray_Schauder(nn.Module):
         self.batch_size = batch_size
         
     def norm(self,func):
-        #print(func(torch.rand(1000,3)).shape)
         integral = mc.integrate(
             fn= lambda s: func(s)**self.p,
             dim= self.dim,
@@ -142,15 +141,16 @@ class Leray_Schauder_model(nn.Module):
         self.batch_size = batch_size
        
     def recompose(self,coeff):
-        func = lambda s: torch.cat([
-                coeff[i]*self.LS_map.basis_eval(i,s)\
-                            .view(self.batch_size,1,self.LS_map.return_channels())\
-                            for i in range(self.basis.basis_size())],dim=-2).sum(dim=-2)
+        func = lambda s: (coeff.view(self.batch_size,1,self.n,1)*\
+                torch.cat([
+                self.LS_map.basis_eval(i,s).unsqueeze(-2)\
+                for i in range(self.basis.basis_size())],dim=-2)).sum(dim=-2)
         return func
     
     def projected_function(self,func):
         projection_coeff = self.LS_map.proj_coeff(func)
         out = self.proj_NN.forward(projection_coeff)
+        print(out.shape)
         out_func = self.recompose(out)
         
         return out_func
