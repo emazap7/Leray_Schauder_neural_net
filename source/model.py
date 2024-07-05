@@ -47,14 +47,12 @@ class basis(nn.Module):
         self.dim_in = dim_in
         self.dim_out = dim_out
         self.n = n
-        self.shapes = shapes
-        self.first = nn.Linear(dim_in,shapes[0])
+        self.shapes = [dim_in]+shapes+[dim_out]
         self.basis = nn.ModuleList(
                         nn.ModuleList(
-                            nn.Linear(shapes[k],shapes[k+1])\
-                            for k in range(len(shapes)-1))\
+                            nn.Linear(self.shapes[k],self.shapes[k+1])\
+                            for k in range(len(self.shapes)-1))\
                             for i in range(n))
-        self.last = nn.Linear(shapes[-1], dim_out)
         self.NL = NL(inplace=True) 
         self.batch_size = batch_size
     
@@ -63,10 +61,10 @@ class basis(nn.Module):
     
     def forward(self,i,y):
         y_in = y.unsqueeze(0).repeat(self.batch_size,1,1)
-        y = self.NL(self.first.forward(y_in))
+        y = y_in
         for layer in self.basis[i]:
             y = self.NL(layer.forward(y)) 
-        y = self.last.forward(y)
+        
         return y
     
     def basis_size(self):
@@ -88,7 +86,7 @@ class Leray_Schauder(nn.Module):
         
     def norm(self,func):
         integral = mc.integrate(
-            fn= lambda s: func(s)**self.p,
+            fn= lambda s: func(s.to(device))**self.p,
             dim= self.dim,
             N= self.N,
             out_dim = -2,
@@ -111,13 +109,14 @@ class Leray_Schauder(nn.Module):
         return out
     
     def proj_coeff(self,func):
-        out = torch.tensor([])
-        normalization = torch.tensor([1e-7]).unsqueeze(0).repeat(self.batch_size,1)
+        out = torch.tensor([]).to(device)
+        #normalization = torch.tensor([1e-7]).unsqueeze(0).repeat(self.batch_size,1).to(device)
         for i in range(self.n):
             mui = self.mu_i(func,i)
             out = torch.cat([out,mui],dim=-1)
-            normalization += mui
-        out /= normalization
+            #normalization += mui
+        #out /= normalization
+        out = torch.softmax(out,dim=-1)
         return out
     
     def basis_eval(self,i,x):
@@ -159,8 +158,8 @@ class Leray_Schauder_model(nn.Module):
 class interpolated_func:
     def __init__(self,time,obs):
         def interpolator(self,time,obs):
-            x = time
-            y = obs
+            x = time.to(device)
+            y = obs.to(device)
             coeffs = natural_cubic_spline_coeffs(x, y)
             interpolation = NaturalCubicSpline(coeffs)
 
