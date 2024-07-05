@@ -71,18 +71,19 @@ class basis(nn.Module):
 
     
 class Leray_Schauder(nn.Module):
-    def __init__(self,basis,epsilon=.1,dim=1,modes=2,N=1000,p=2,batch_size=8):
+    def __init__(self,basis,epsilon=.1,dim=1,channels=2,N=1000,p=2,batch_size=8):
         super(Leray_Schauder, self).__init__()
         self.basis = basis
         self.epsilon = epsilon
         self.dim = dim
-        self.modes = modes
+        self.channels = channels
         self.N = N
         self.p = p
         self.n = self.basis.basis_size()
         self.batch_size = batch_size
         
     def norm(self,func):
+        #print(func(torch.rand(1000,3)).shape)
         integral = mc.integrate(
             fn= lambda s: func(s)**self.p,
             dim= self.dim,
@@ -97,11 +98,11 @@ class Leray_Schauder(nn.Module):
         return torch.where(norm_<=self.epsilon,norm_,0.).float()#norm_ if norm_<= self.epsilon else 0.
         
     def proj(self,func,x):
-        out = torch.zeros(self.batch_size,self.modes)
+        out = torch.zeros(self.batch_size,self.channels)
         normalization = torch.tensor([1e-7]).unsqueeze(0).repeat(self.batch_size,1)
         for i in range(self.n):
             mui = self.mu_i(func,i)
-            out += mui*self.basis.forward(i,x).view(self.batch_size,self.modes)
+            out += mui*self.basis.forward(i,x).view(self.batch_size,self.channels)
             normalization += mui
         out /= normalization
         return out
@@ -122,8 +123,8 @@ class Leray_Schauder(nn.Module):
     def return_basis(self):
         return self.basis
     
-    def return_modes(self):
-        return self.modes
+    def return_channels(self):
+        return self.channels
     
     
     
@@ -139,7 +140,7 @@ class Leray_Schauder_model(nn.Module):
     def recompose(self,coeff):
         func = lambda s: torch.cat([
                 coeff[i]*self.LS_map.basis_eval(i,s)\
-                            .view(self.batch_size,1,self.LS_map.return_modes())\
+                            .view(self.batch_size,1,self.LS_map.return_channels())\
                             for i in range(self.basis.basis_size())],dim=-2).sum(dim=-2)
         return func
     
