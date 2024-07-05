@@ -4,6 +4,8 @@ import scipy
 import itertools
 from scipy.special import binom
 from torch import nn
+from torchcubicspline import(natural_cubic_spline_coeffs, 
+                             NaturalCubicSpline)
 
 
 if torch.cuda.is_available():  
@@ -165,7 +167,7 @@ class interpolated_func:
                 return interpolation.evaluate(point)
 
             return output
-        self.interpolator = interpolator(time,obs)
+        self.interpolator = interpolator(self,time,obs)
         
     def func(self,x):
         return self.interpolator(x)
