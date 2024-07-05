@@ -140,18 +140,17 @@ class Leray_Schauder_model(nn.Module):
         self.basis = LS_map.return_basis()
         self.batch_size = batch_size
        
-    def recompose(self,coeff):
+    def reconstruction(self,coeff):
         func = lambda s: (coeff.view(self.batch_size,1,self.n,1)*\
                 torch.cat([
                 self.LS_map.basis_eval(i,s).unsqueeze(-2)\
-                for i in range(self.basis.basis_size())],dim=-2)).sum(dim=-2)
+                for i in range(self.n)],dim=-2)).sum(dim=-2)
         return func
     
     def projected_function(self,func):
         projection_coeff = self.LS_map.proj_coeff(func)
         out = self.proj_NN.forward(projection_coeff)
-        print(out.shape)
-        out_func = self.recompose(out)
+        out_func = self.reconstruction(out)
         
         return out_func
     
