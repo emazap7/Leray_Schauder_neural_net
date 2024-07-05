@@ -83,7 +83,6 @@ class Leray_Schauder(nn.Module):
         self.batch_size = batch_size
         
     def norm(self,func):
-        #print(func(torch.rand(1000,3)).shape)
         integral = mc.integrate(
             fn= lambda s: func(s)**self.p,
             dim= self.dim,
