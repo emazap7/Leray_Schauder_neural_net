@@ -6,6 +6,8 @@ from scipy.special import binom
 from torch import nn
 from torchcubicspline import(natural_cubic_spline_coeffs, 
                              NaturalCubicSpline)
+from source.integrators import MonteCarlo
+mc = MonteCarlo()
 
 
 if torch.cuda.is_available():  
