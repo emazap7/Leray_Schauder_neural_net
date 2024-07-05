@@ -180,18 +180,18 @@ class Train_val_split:
     
 class dataset(Dataset):
     'Characterizes a dataset for PyTorch'
-    def __init__(self, Data, spectral_coeff):
+    def __init__(self, Data, downsampling):
         'Initialization'
         self.Data = Data.float()
-        self.spectral_coeff = spectral_coeff.float()
+        self.inputs_ = Data.float()[:,::downsampling,:]
 
     def __getitem__(self, index):
         
         ID = index 
         obs = self.Data[ID,...]
-        obs_spec = self.spectral_coeff[ID,...]
+        obs_inputs = self.inputs_[ID,...]
 
-        return obs, obs_spec
+        return obs_inputs, obs
     def __len__(self):
         return self.Data.shape[0]
     
