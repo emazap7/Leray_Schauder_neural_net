@@ -100,22 +100,23 @@ class Leray_Schauder(nn.Module):
         
     def proj(self,func,x):
         out = torch.zeros(self.batch_size,self.channels)
-        normalization = torch.tensor([1e-7]).unsqueeze(0).repeat(self.batch_size,1)
+        #normalization = torch.tensor([1e-7]).unsqueeze(0).repeat(self.batch_size,1)
         for i in range(self.n):
             mui = self.mu_i(func,i)
             out += mui*self.basis.forward(i,x).view(self.batch_size,self.channels)
-            normalization += mui
-        out /= normalization
+            #normalization += mui
+        #out /= normalization
+        out = torch.softmax(out,dim=-1)
         return out
     
     def proj_coeff(self,func):
         out = torch.tensor([]).to(device)
-        #normalization = torch.tensor([1e-7]).unsqueeze(0).repeat(self.batch_size,1).to(device)
+        # normalization = torch.tensor([1e-7]).unsqueeze(0).repeat(self.batch_size,1).to(device)
         for i in range(self.n):
             mui = self.mu_i(func,i)
             out = torch.cat([out,mui],dim=-1)
-            #normalization += mui
-        #out /= normalization
+            # normalization += mui
+        # out /= normalization
         out = torch.softmax(out,dim=-1)
         return out
     
