@@ -9,7 +9,9 @@ import torch
 from scipy import integrate
 import time
 import pickle
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm_notebook as tqdm
+from torch.nn  import functional as F
 
 logger = logging.getLogger("iesolver")
 logger.setLevel(logging.WARNING)#(logging.DEBUG)
@@ -106,8 +108,8 @@ def experiment(model, Data, time_seq, args):
 
         Dataset_train = dataset(Data[:obs.shape[0]-split_size,...],args.downsample)
         Dataset_valid = dataset(Data[obs.shape[0]-split_size:,...],args.downsample)
-        train_loader = torch.utils.data.DataLoader(Dataset_train,batch_size=args.n_batch,shuffle=True,drop_last=True)
-        valid_loader = torch.utils.data.DataLoader(Dataset_valid,batch_size=args.n_batch,shuffle=False,drop_last=True)
+        train_loader = DataLoader(Dataset_train,batch_size=args.n_batch,shuffle=True,drop_last=True)
+        valid_loader = DataLoader(Dataset_valid,batch_size=args.n_batch,shuffle=False,drop_last=True)
 
         
         start = time.time()
@@ -251,7 +253,7 @@ def experiment(model, Data, time_seq, args):
 
         
         Dataset_test = dataset(Data,args.downsample)
-        test_loader = torch.utils.data.DataLoader(Dataset_test,batch_size=1,shuffle=False)
+        test_loader = DataLoader(Dataset_test,batch_size=1,shuffle=False)
         
         
         ## Validating
