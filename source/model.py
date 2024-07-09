@@ -29,13 +29,11 @@ class F_NN(nn.Module):
         self.NL = NL(inplace=True) 
         
     def forward(self, y):
-        
         y_in = y
         y = self.NL(self.first.forward(y))
         for layer in self.layers:
             y = self.NL(layer.forward(y))   
         y = self.last.forward(y)
-        
         return y
 
 
@@ -64,7 +62,6 @@ class basis(nn.Module):
         y = y_in
         for layer in self.basis[i]:
             y = self.NL(layer.forward(y)) 
-        
         return y
     
     def basis_size(self):
@@ -76,7 +73,7 @@ class Leray_Schauder(nn.Module):
     def __init__(self,basis,epsilon=.1,dim=1,channels=2,N=1000,p=2,batch_size=8):
         super(Leray_Schauder, self).__init__()
         self.basis = basis
-        self.epsilon = epsilon
+        self.epsilon = nn.Parameter(torch.tensor(epsilon, dtype=torch.float32))
         self.dim = dim
         self.channels = channels
         self.N = N
@@ -96,7 +93,7 @@ class Leray_Schauder(nn.Module):
     def mu_i(self,func,i):
         norm_ = torch.norm(self.norm(lambda s: func(s)-self.basis(i,s)),p=self.p,dim=[-1]).to(torch.float64)
         norm_ = norm_.unsqueeze(-1)
-        return torch.where(norm_<=self.epsilon,norm_,0.).float()#norm_ if norm_<= self.epsilon else 0.
+        return torch.where(norm_<=self.epsilon,self.epsilon-norm_,0.001).float()#norm_ if norm_<= self.epsilon else 0.
         
     def proj(self,func,x):
         out = torch.zeros(self.batch_size,self.channels)
@@ -122,6 +119,9 @@ class Leray_Schauder(nn.Module):
     
     def return_channels(self):
         return self.channels
+
+    def return_epsilon(self):
+        return self.epsilon
     
     
     
@@ -145,7 +145,6 @@ class Leray_Schauder_model(nn.Module):
         projection_coeff = self.LS_map.proj_coeff(func)
         out = self.proj_NN.forward(projection_coeff)
         out_func = self.reconstruction(out)
-        
         return out_func
     
     
@@ -160,7 +159,6 @@ class interpolated_func:
 
             def output(point:torch.Tensor):
                 return interpolation.evaluate(point)
-
             return output
         self.interpolator = interpolator(self,time,obs)
         
