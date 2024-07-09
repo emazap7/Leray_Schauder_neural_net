@@ -105,7 +105,7 @@ def experiment(model, Data, time_seq, args):
         
         
         split_size = int(args.training_split*obs.size(0))
-
+        
         Dataset_train = dataset(Data[:obs.shape[0]-split_size,...],args.downsample)
         Dataset_valid = dataset(Data[obs.shape[0]-split_size:,...],args.downsample)
         train_loader = DataLoader(Dataset_train,batch_size=args.n_batch,shuffle=True,drop_last=True)
@@ -170,19 +170,35 @@ def experiment(model, Data, time_seq, args):
                         z_val = func_val(times.unsqueeze(-1))
 
                         loss_validation = F.mse_loss(z_val, obs_val)
-                        if counter == 0 and i % args.plot_freq == 0:
+                        
+                        if i % args.plot_freq == 0:
                             z_p = z_val
                             z_p = to_np(z_p)
 
-                            obs_print = to_np(obs_val[0,...])
+                            obs_print = to_np(obs_val[i%7,...])
 
-                            plt.figure(1, figsize=(8,8),facecolor='w')
+                            if args.dataset_name == 'fMRI' is False:
+                        
+                                plt.figure(1, figsize=(8,8),facecolor='w')
+        
+                                plt.scatter(obs_print[:,0],obs_print[:,1],label='Data')
+                                plt.plot(z_p[i%7,:,0],z_p[i%7,:,1],label='Model')
+        
+        
+                                plt.savefig(os.path.join(path_to_save_plots,'plot_'+str(i)))
 
-                            plt.scatter(obs_print[:,0],obs_print[:,1],label='Data')
-                            plt.plot(z_p[0,:,0],z_p[0,:,1],label='Model')
-                            plt.savefig(os.path.join(path_to_save_plots,'plot_'+str(i)))
-                            plt.close('all')
+
+                                plt.close('all')
+                                
                             
+                            else:
+                                plt.figure(1, figsize=(8,8),facecolor='w')
+    
+                                plt.scatter(obs_print[:,0],obs_print[:,1],label='Data')
+                                plt.plot(z_p[i%7,:,0],z_p[i%7,:,1],label='Model')
+                                plt.savefig(os.path.join(path_to_save_plots,'plot_'+str(i)))
+                                plt.close('all')
+                                
                             del z_p, obs_print
                         
                         del obs_val, z_val, inputs_val
