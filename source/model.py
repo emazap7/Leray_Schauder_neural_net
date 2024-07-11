@@ -97,10 +97,7 @@ class Leray_Schauder(nn.Module):
         
     def mu_i(self,func,i):
         norm_ = self.norm(lambda s: func(s)-self.basis(i,s)).to(torch.float64)
-        if self.smoothing is not None:
-            return (self.epsilon-norm_)*self.smoothing(self.epsilon-norm_).float()
-        else:
-            return torch.where(norm_<=self.epsilon,self.epsilon-norm_,.001).float()
+        return torch.where(norm_<=self.epsilon,self.epsilon-norm_,.001*self.epsilon).float()
         
     def proj(self,func,x):
         out = torch.zeros(self.batch_size,self.channels)
