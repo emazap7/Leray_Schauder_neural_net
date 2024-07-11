@@ -30,11 +30,12 @@ class F_NN(nn.Module):
         
     def forward(self, y):
         y_in = y
+        y = y_in.flatten(-2,-1)
         y = self.NL(self.first.forward(y))
         for layer in self.layers:
             y = self.NL(layer.forward(y))   
         y = self.last.forward(y)
-        return y
+        return y.view(y_in.shape[0],y_in.shape[1],y_in.shape[2])
 
 
     
@@ -45,12 +46,14 @@ class basis(nn.Module):
         self.dim_in = dim_in
         self.dim_out = dim_out
         self.n = n
-        self.shapes = [dim_in]+shapes+[dim_out]
+        self.first = nn.ModuleList(nn.Linear(dim_in,shapes[0]) for i in range(n))
+        self.shapes = shapes
         self.basis = nn.ModuleList(
                         nn.ModuleList(
                             nn.Linear(self.shapes[k],self.shapes[k+1])\
                             for k in range(len(self.shapes)-1))\
                             for i in range(n))
+        self.last = nn.ModuleList(nn.Linear(shapes[-1],dim_out) for i in range(n))
         self.NL = NL(inplace=True) 
         self.batch_size = batch_size
     
@@ -59,9 +62,10 @@ class basis(nn.Module):
     
     def forward(self,i,y):
         y_in = y.unsqueeze(0).repeat(self.batch_size,1,1)
-        y = y_in
+        y = self.first[i](y_in)
         for layer in self.basis[i]:
             y = self.NL(layer.forward(y)) 
+        y = self.last[i](y)
         return y
     
     def basis_size(self):
@@ -70,7 +74,7 @@ class basis(nn.Module):
 
     
 class Leray_Schauder(nn.Module):
-    def __init__(self,basis,epsilon=.1,dim=1,channels=2,N=1000,p=2,batch_size=8):
+    def __init__(self,basis,epsilon=.1,dim=1,channels=2,N=1000,p=2,batch_size=8,smoothing=None):
         super(Leray_Schauder, self).__init__()
         self.basis = basis
         self.epsilon = nn.Parameter(torch.tensor(epsilon, dtype=torch.float32))
@@ -80,6 +84,7 @@ class Leray_Schauder(nn.Module):
         self.p = p
         self.n = self.basis.basis_size()
         self.batch_size = batch_size
+        self.smoothing = smoothing
         
     def norm(self,func):
         integral = mc.integrate(
@@ -91,14 +96,17 @@ class Leray_Schauder(nn.Module):
         return torch.pow(integral,1/self.p)
         
     def mu_i(self,func,i):
-        norm_ = torch.norm(self.norm(lambda s: func(s)-self.basis(i,s)),p=self.p,dim=[-1]).to(torch.float64)
-        norm_ = norm_.unsqueeze(-1)
-        return torch.where(norm_<=self.epsilon,self.epsilon-norm_,0.001).float()#norm_ if norm_<= self.epsilon else 0.
+        norm_ = self.norm(lambda s: func(s)-self.basis(i,s)).to(torch.float64)
+        if self.smoothing is not None:
+            return (self.epsilon-norm_)*self.smoothing(self.epsilon-norm_).float()
+        else:
+            return torch.where(norm_<=self.epsilon,self.epsilon-norm_,.001).float()
         
     def proj(self,func,x):
         out = torch.zeros(self.batch_size,self.channels)
         for i in range(self.n):
             mui = self.mu_i(func,i)
+            print(mui.shape)
             out += mui*self.basis.forward(i,x).view(self.batch_size,self.channels)
         out = torch.softmax(out,dim=-1)
         return out
@@ -107,8 +115,8 @@ class Leray_Schauder(nn.Module):
         out = torch.tensor([]).to(device)
         for i in range(self.n):
             mui = self.mu_i(func,i)
-            out = torch.cat([out,mui],dim=-1)
-        out = torch.softmax(out,dim=-1)
+            out = torch.cat([out,mui.unsqueeze(-2)],dim=-2)
+        out = torch.softmax(out,dim=-2)
         return out
     
     def basis_eval(self,i,x):
@@ -135,7 +143,7 @@ class Leray_Schauder_model(nn.Module):
         self.batch_size = batch_size
        
     def reconstruction(self,coeff):
-        func = lambda s: (coeff.view(self.batch_size,1,self.n,1)*\
+        func = lambda s: (coeff.view(self.batch_size,1,self.n,self.LS_map.return_channels())*\
                 torch.cat([
                 self.LS_map.basis_eval(i,s).unsqueeze(-2)\
                 for i in range(self.n)],dim=-2)).sum(dim=-2)
