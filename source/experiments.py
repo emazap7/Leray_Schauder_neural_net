@@ -29,7 +29,7 @@ from torchcubicspline import(natural_cubic_spline_coeffs,
 from source.integrators import MonteCarlo 
 mc = MonteCarlo()
 
-from source.model import F_NN, basis, Leray_Schauder, Leray_Schauder_model, interpolated_func
+from source.model import F_NN, basis, Leray_Schauder, Leray_Schauder_model, interpolated_func, multi_linear_interpolate
 from source.utils import dataset, EarlyStopping, SaveBestModel, load_checkpoint
 
 from source.utils import fix_random_seeds,to_np
@@ -124,9 +124,14 @@ def experiment(model, Data, time_seq, args):
             train_loss = 0.0
             
             for  inputs_, obs_ in tqdm(train_loader): 
-                
                 obs_func_ = interpolated_func(times[::args.downsample],inputs_)
                 obs_func = lambda s: obs_func_.func(s.reshape(args.N_MC))
+                if args.plot_train and i%args.plot_freq==0:
+                    times_ = torch.linspace(-1,1,args.N_MC).to(device)
+                    plt.figure(1, figsize=(8,8),facecolor='w')
+                    plt.plot(obs_func(times_).cpu()[0,...,0],obs_func(times_).cpu()[0,...,1],label='Initialization')
+                    plt.show()
+                    plt.close('all')
                 func_ = model.projected_function(obs_func)
                 z_ = func_(times.unsqueeze(-1))
                 
@@ -166,9 +171,10 @@ def experiment(model, Data, time_seq, args):
                 
                         obs_func_val_ = interpolated_func(times[::args.downsample],inputs_val)
                         obs_func_val = lambda s: obs_func_val_.func(s.reshape(args.N_MC))
+                        
                         func_val = model.projected_function(obs_func_val)
                         z_val = func_val(times.unsqueeze(-1))
-
+                        
                         loss_validation = F.mse_loss(z_val, obs_val)
                         
                         if i % args.plot_freq == 0:
@@ -177,27 +183,12 @@ def experiment(model, Data, time_seq, args):
 
                             obs_print = to_np(obs_val[i%7,...])
 
-                            if args.dataset_name == 'fMRI' is False:
-                        
-                                plt.figure(1, figsize=(8,8),facecolor='w')
-        
-                                plt.scatter(obs_print[:,0],obs_print[:,1],label='Data')
-                                plt.plot(z_p[i%7,:,0],z_p[i%7,:,1],label='Model')
-        
-        
-                                plt.savefig(os.path.join(path_to_save_plots,'plot_'+str(i)))
+                            plt.figure(1, figsize=(8,8),facecolor='w')
 
-
-                                plt.close('all')
-                                
-                            
-                            else:
-                                plt.figure(1, figsize=(8,8),facecolor='w')
-    
-                                plt.scatter(obs_print[:,0],obs_print[:,1],label='Data')
-                                plt.plot(z_p[i%7,:,0],z_p[i%7,:,1],label='Model')
-                                plt.savefig(os.path.join(path_to_save_plots,'plot_'+str(i)))
-                                plt.close('all')
+                            plt.scatter(obs_print[:,0],obs_print[:,1],label='Data')
+                            plt.plot(z_p[i%7,:,0],z_p[i%7,:,1],label='Model')
+                            plt.savefig(os.path.join(path_to_save_plots,'plot_'+str(i)))
+                            plt.close('all')
                                 
                             del z_p, obs_print
                         
@@ -314,4 +305,3 @@ def experiment(model, Data, time_seq, args):
         test_loss /= counter
 
         return test_loss, torch.tensor(all_test_loss).std()
-        
