@@ -181,12 +181,12 @@ def experiment(model, Data, time_seq, args):
                             z_p = z_val
                             z_p = to_np(z_p)
 
-                            obs_print = to_np(obs_val[i%7,...])
+                            obs_print = to_np(obs_val[0,...])
 
                             plt.figure(1, figsize=(8,8),facecolor='w')
 
                             plt.scatter(obs_print[:,0],obs_print[:,1],label='Data')
-                            plt.plot(z_p[i%7,:,0],z_p[i%7,:,1],label='Model')
+                            plt.plot(z_p[0,:,0],z_p[0,:,1],label='Model')
                             plt.savefig(os.path.join(path_to_save_plots,'plot_'+str(i)))
                             plt.close('all')
                                 
