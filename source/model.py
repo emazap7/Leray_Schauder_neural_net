@@ -169,3 +169,21 @@ class interpolated_func:
         
     def func(self,x):
         return self.interpolator(x)
+
+
+class multi_linear_interpolate:
+    def __init__(self,x_points, y_points):
+        sorted_indices = torch.argsort(x_points)
+        self.x_points = x_points[sorted_indices]
+        self.y_points = y_points[:,sorted_indices,:]
+
+    def interpolate(self,x):
+        y = torch.tensor([]).to(device)
+        for i, xi in enumerate(x):
+            for j in range(self.x_points.shape[0] - 1):
+                if self.x_points[j] <= xi <= self.x_points[j + 1]:
+                    x0, y0 = self.x_points[j], self.y_points[:,j,:].unsqueeze(-2)
+                    x1, y1 = self.x_points[j + 1], self.y_points[:,j + 1,:].unsqueeze(-2)
+                    yi = y0 + ((y1 - y0) / (x1 - x0)) * (xi - x0)
+                    y = torch.cat([y,yi],dim=-2)
+        return y
