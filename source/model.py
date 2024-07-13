@@ -100,7 +100,7 @@ class Leray_Schauder(nn.Module):
             fn= lambda s: func(s.to(device))**self.p,
             dim= self.dim,
             N= self.N,
-            integration_domain = self.integration_domain
+            integration_domain = self.integration_domain,
             out_dim = -2,
             )
         return torch.pow(integral,1/self.p)
