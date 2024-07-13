@@ -74,11 +74,20 @@ class basis(nn.Module):
 
     
 class Leray_Schauder(nn.Module):
-    def __init__(self,basis,epsilon=.1,dim=1,channels=2,N=1000,p=2,batch_size=8,smoothing=None):
+    def __init__(self,basis,
+                 epsilon=.1,
+                 dim=1,
+                 integration_domain = [[-1,1]]
+                 channels=2,
+                 N=1000,
+                 p=2,
+                 batch_size=8,
+                 smoothing=None):
         super(Leray_Schauder, self).__init__()
         self.basis = basis
         self.epsilon = nn.Parameter(torch.tensor(epsilon, dtype=torch.float32))
         self.dim = dim
+        self.integration_domain = integration_domain
         self.channels = channels
         self.N = N
         self.p = p
@@ -91,6 +100,7 @@ class Leray_Schauder(nn.Module):
             fn= lambda s: func(s.to(device))**self.p,
             dim= self.dim,
             N= self.N,
+            integration_domain = self.integration_domain
             out_dim = -2,
             )
         return torch.pow(integral,1/self.p)
