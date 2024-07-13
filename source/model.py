@@ -77,7 +77,7 @@ class Leray_Schauder(nn.Module):
     def __init__(self,basis,
                  epsilon=.1,
                  dim=1,
-                 integration_domain = [[-1,1]]
+                 integration_domain = [[-1,1]],
                  channels=2,
                  N=1000,
                  p=2,
