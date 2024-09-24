@@ -81,7 +81,7 @@ class SaveBestModel:
         self.best_valid_loss = best_valid_loss
 
     
-    def __call__(self, path, current_valid_loss, epoch, model, model_func, f_func):
+    def __call__(self, path, current_valid_loss, epoch, model, model_func, encoder=None, decoder=None):
         if current_valid_loss < self.best_valid_loss:
             
             self.best_valid_loss = current_valid_loss
@@ -91,13 +91,15 @@ class SaveBestModel:
             model_state = {'state_dict': model_func.state_dict()}
             torch.save(model, os.path.join(path,'model.pt'))
             
-            if f_func is not None: 
-                f_func_state = {'state_dict': f_func.state_dict()}
-                torch.save(f_func_state, os.path.join(path,'f_func.pt'))
+            if encoder is not None: 
+                encoder_state = {'state_dict': encoder.state_dict()}
+                torch.save(encoder_state, os.path.join(path,'encoder.pt'))
+            if decoder is not None:
+                decoder_state = {'state_dict': decoder.state_dict()}
+                torch.save(decoder_state, os.path.join(path,'decoder.pt'))
             
             
-            
-def load_checkpoint(path, model, optimizer, scheduler, f_func):
+def load_checkpoint(path, model, optimizer, scheduler, encoder=None, decoder=None):
     print('Loading ', os.path.join(path))
     if torch.cuda.is_available():
         map_location=lambda storage, loc: storage.cuda()
@@ -113,11 +115,14 @@ def load_checkpoint(path, model, optimizer, scheduler, f_func):
     checkpoint = torch.load(os.path.join(path, 'model.pt'), map_location=map_location)
     model.load_state_dict(checkpoint['state_dict'])
 
-    if f_func is not None: 
-        checkpoint = torch.load(os.path.join(path, 'f_func.pt'), map_location=map_location)
-        f_func.load_state_dict(checkpoint['state_dict'])
+    if encoder is not None: 
+        checkpoint = torch.load(os.path.join(path, 'encoder.pt'), map_location=map_location)
+        encoder.load_state_dict(checkpoint['state_dict'])
+    if decoder is not None: 
+        checkpoint = torch.load(os.path.join(path, 'decoder.pt'), map_location=map_location)
+        decoder.load_state_dict(checkpoint['state_dict'])
     
-    return model, optimizer, scheduler, f_func
+    return model, optimizer, scheduler, encoder, decoder
     
 class Test_Dynamics_Dataset(torch.utils.data.Dataset):
     def __init__(self, Data, times):
@@ -187,6 +192,24 @@ class dataset(Dataset):
 
     def __getitem__(self, index):
         
+        ID = index 
+        obs = self.Data[ID,...]
+        obs_inputs = self.inputs_[ID,...]
+
+        return obs_inputs, obs
+    def __len__(self):
+        return self.Data.shape[0]
+
+class burgers_dataset(Dataset):
+    'Characterizes a dataset for PyTorch'
+    def __init__(self, Data, type='IV'):
+        'Initialization'
+        self.Data = Data.float()
+        if type == 'IV':
+            self.inputs_ = Data[:,:,0:1].float()
+        elif type == 'BV':
+            self.inputs_ = torch.cat([Data[...,:1],Data[...,-1:]],dim=-1).float()
+    def __getitem__(self, index):
         ID = index 
         obs = self.Data[ID,...]
         obs_inputs = self.inputs_[ID,...]
@@ -269,3 +292,11 @@ class dataset_generator(Dataset):
 
     def __len__(self):
         return len(self.times)
+
+def flatten_parameters(network):
+    p_shapes = []
+    flat_parameters = []
+    for p in network.parameters():
+        p_shapes.append(p.size())
+        flat_parameters.append(p.flatten())
+    return torch.cat(flat_parameters).shape[0]
