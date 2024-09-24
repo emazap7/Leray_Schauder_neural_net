@@ -54,23 +54,6 @@ use_cuda = torch.cuda.is_available()
 from functools import reduce
 
 from torch import Tensor 
-# import abc
-
-# from torch import nn
-
-# from torch.autograd.functional import vjp
-# # !pip install torch torchvision
-
-# # Adapted codes from M. Surtsukov's blog:
-# # https://msurtsukov.github.io/Neural-ODE/
-
-
-# torchquad implemented below without infos appearing
-#!conda install torchquad -c conda-forge -c pytorch
-
-#from torchquad import MonteCarlo, enable_cuda
-
-#mc = MonteCarlo()
 
 
 
@@ -176,7 +159,7 @@ class IntegrationGrid:
             N (int): Total desired number of points in the grid (will take next lower root depending on dim)
             integration_domain (list): Domain to choose points in, e.g. [[-1,1],[0,1]].
         """
-        start = perf_counter()
+        #start = perf_counter()
         self._check_inputs(N, integration_domain)
         self._dim = len(integration_domain)
 
@@ -228,7 +211,7 @@ class IntegrationGrid:
 
         logger.info("Integration grid created.")
 
-        self._runtime = perf_counter() - start
+        #self._runtime = perf_counter() - start
 
     def _check_inputs(self, N, integration_domain):
         """Used to check input validity"""
@@ -266,6 +249,8 @@ class IntegrationGrid:
                     integration_domain,
                     " does not specify a valid integration bound.",
                 )
+    def return_grid(self):
+        return self.points
 
 class Boole(BaseIntegrator):
 
